@@ -18,7 +18,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.entity.Journey;
+import com.example.demo.entity.Weather;
 import com.example.demo.repository.IJourneyRepository;
+import com.example.demo.repository.IWeatherRepository;
 
 @RestController
 @RequestMapping("/journeys")
@@ -27,13 +29,24 @@ public class JourneyController {
 	@Autowired
 	IJourneyRepository journeyRepository;
 	
+	@Autowired
+	IWeatherRepository weatherRepository;
+	
 	@PostMapping()
 	public ResponseEntity<Journey> save(@Valid @RequestBody Journey journey){
-		
+		Weather weather;
 		try {
+			System.out.println((long)journey.getYear());
+			if((long)journey.getYear() < 1900 || (long)journey.getYear() > 3000) {
+				return new ResponseEntity<>( HttpStatus.BAD_REQUEST);
+			}
+			weather = Weather.getInstance(journey.getCountry());
+			weather.setId(null);
+			weatherRepository.save(weather);
+			journey.setWeather(weather);
 			return new ResponseEntity<>(journeyRepository.save(journey), HttpStatus.CREATED);
-			
 		}catch (Exception ex){
+			System.out.println(ex.getMessage());
 			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
 	}
@@ -64,9 +77,9 @@ public class JourneyController {
 	}
 	
 	@PutMapping("/{id}")
-	public ResponseEntity<Journey> updateJourney(@Valid @RequestBody Journey journey){
-		
+	public ResponseEntity<Journey> updateJourney(@Valid @RequestBody Journey journey, @PathVariable Long id){
 		try {
+			journey.setId(id);
 			return new ResponseEntity<Journey>(journeyRepository.save(journey), HttpStatus.OK);			
 		}catch (Exception ex) {
 			
